@@ -18,9 +18,19 @@ class Account(object):
         # self.__pre_balance = 0.0 # 昨日账户结算净值
         self.__commission = 0.0 # 手续费
         self.__close_profit = 0.0 # 平仓盈亏
-        # self.__position_profit = 0.0 # 持仓盈亏
+        self.__position_profit = 0.0 # 持仓盈亏
         self.__deposit = 0 # 累计入金金额
         self.__withdraw = 0 # 累计出金金额
+
+
+    def close_profit(self):
+        return self.__close_profit
+
+    def position_profit(self):
+        return self.__position_profit
+
+    def commission(self):
+        return self.__commission
 
     def set_init_cash(self, init_cash):
         self.__available_cash +=  init_cash

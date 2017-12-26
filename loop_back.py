@@ -130,4 +130,4 @@ if __name__ == '__main__':
     lb.load_history_data('./../fc/data/out_dir/ag/ag2017/ag0001_20170103.csv')
     lb.run_loop_back()
     # print('<----------------------------------->')
-    # lb.calc_result()
+    lb.calc_result()

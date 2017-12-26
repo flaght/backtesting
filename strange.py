@@ -5,6 +5,7 @@ from fc_prediction import Prediciton
 from instrument import Instrument
 from order import Order, CombOffset, OrderPrice, Direction, OrderStatus
 from account import Account
+from daily_record import DailyRecord
 import numpy as np
 from collections import OrderedDict
 import time,datetime
@@ -27,12 +28,12 @@ class Strange(object):
         self.long_volumes = OrderedDict() #当前多头持仓情况
         self.short_volumes = OrderedDict() #当前空头持仓情况
 
+        # 当日行情结束后，进行导出，用于分析
+
         self.__history_limit_order = OrderedDict() # 历史委托单
         self.__history_limit_volumes = OrderedDict() # 历史成交记录
 
         self.__working_limit_order = limit_order
-
-
 
         # 暂时将账户和合约初始化放在策略内初始化
         
@@ -54,8 +55,13 @@ class Strange(object):
 
     def calc_result(self):
         self.__account.dump()
-        # 当日盈亏: 平仓盈亏 + 持仓盈亏
-        # 当日平仓盈亏
+        record = DailyRecord()
+        record.set_close_profit(self.__account.close_profit())
+        record.set_position_profit(self.__account.position_profit())
+        record.set_commssion(self.__account.commission())
+        record.set_limit_volume(self.__history_limit_volumes)
+        record.set_limit_order(self.__history_limit_order)
+        record.dump()
 
     # close, high, low open  下一分钟收盘价  
     def __on_fc_single(self):
@@ -100,6 +106,8 @@ class Strange(object):
         for oid, order in self.__limit_order.items():
             del self.__working_limit_order[oid]
             del self.__limit_order[oid]
+            order.set_status(OrderStatus.cacelled)
+            self.__history_limit_order[oid] = order
             self.__account.canncel_order_cash(order.margin(), order.fee())
     
     
