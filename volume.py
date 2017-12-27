@@ -7,6 +7,7 @@
 
 import datetime
 import time
+from mlog import MLog
 from order import CombOffset,Direction
 
 GLOBAL_VOLUME_ID = 100
@@ -36,7 +37,7 @@ class Volume(object):
         elif self.__comb_offset_flag == CombOffset.close and self.__direction == Direction.sell_direction:
             str = '多头平仓'
         
-        print('[%s]--->Volume:trader_id:%d, order_id:%d, direction:%d, limit_price:%f, margin:%f, fee:%f, comb_offset_flag:%d, amount:%d, create_time:%d, strategy_id:%d, min_volume:%d'%(str,self.__trader_id,
+        MLog.write().debug('[%s]--->Volume:trader_id:%d, order_id:%d, direction:%d, limit_price:%f, margin:%f, fee:%f, comb_offset_flag:%d, amount:%d, create_time:%d, strategy_id:%d, min_volume:%d'%(str,self.__trader_id,
                             self.__order_id, self.__direction.value, self.__limit_price,self.__margin, self.__fee, self.__comb_offset_flag.value,self.__amount,self.__create_time,
                             self.__strategy_id,self.__min_volume))
     def trader_id(self):

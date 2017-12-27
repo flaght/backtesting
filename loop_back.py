@@ -4,13 +4,12 @@
 from __future__ import division
 from collections import OrderedDict
 from bar import Bar
-from account import Account
 import pandas as pd
+import os
 from strange import Strange
-from order import Direction, CombOffset, OrderPrice, OrderStatus, Order
+from order import Direction, OrderStatus
 from volume import Volume
-import pdb
-
+from mlog import MLog
 
 class LoopBack(object):
 
@@ -34,7 +33,10 @@ class LoopBack(object):
         self.__log_list = []
 
         # 存储行情
-        self.__history_data = []
+        self.__history_data = OrderedDict()
+
+        #降低内存使用 存储行情路径
+        self.__history_file = OrderedDict()
 
         # 初始化策略
         self.__strategy = Strange(self.__working_limit_order)
@@ -108,26 +110,42 @@ class LoopBack(object):
         self.__strategy.on_bar(bar)
 
     def load_history_data(self, dominat_file):
+        mkdate = os.path.split(dominat_file)[-1].split('_')[-1].split('.')[0]
         data = pd.read_csv(dominat_file)
-        self.__history_data.append(data)
-        #for index in data.index:
-        #    print (data.loc[index].values[0:-1])
+        self.__history_data[mkdate] = data
+
+
+    def load_history_dir(self, dir):
+        for path, dirs, fs in os.walk(dir):
+            for f in fs:
+                dominat_file = os.path.join(path, f)
+                mkdate = os.path.split(dominat_file)[-1].split('_')[-1].split('.')[0]
+                self.__history_file[mkdate] = dominat_file
+                # self.load_history_data(dominat_file)
+
+        # 排序
+        self.__history_file = OrderedDict(sorted(self.__history_file.items(), key=lambda t: t[0]))
+        # for key,value in self.__history_file.items():
+        #    print (key,value)
+
 
     def run_loop_back(self):
-        for data in self.__history_data:
+        for mkdate,file in self.__history_file.items():
+            data = pd.read_csv(file)
             for index in data.index:
-                print('<--------------------start:%d---------------------------------------->'%(index+1))
+                # print('<--------------------start:%d---------------------------------------->'%(index+1))
                 self.__on_bar(data.loc[index].values)
-                print('<---------------------end:%d----------------------------------------->\n'%(index+1))
-                # print (data.loc[index].values[0:-1])
-
+                # print('<---------------------end:%d----------------------------------------->\n'%(index+1))
+            self.__strategy.record()
     def calc_result(self):
         self.__strategy.calc_result()
 
 if __name__ == '__main__':
+    MLog.config(name="look_back")
     lb = LoopBack()
     lb.set_symbol('ag')
-    lb.load_history_data('./../fc/data/out_dir/ag/ag2017/ag0001_20170103.csv')
+    # lb.load_history_data('./../fc/data/out_dir/ag/ag2017/ag0001_20171121.csv')
+    lb.load_history_dir('./../fc/data/out_dir/ag/ag2017/')
     lb.run_loop_back()
     # print('<----------------------------------->')
-    lb.calc_result()
+    # lb.calc_result()

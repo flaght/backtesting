@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-import pdb
+from mlog import MLog
 '''
 K线数据
 '''
@@ -40,7 +40,7 @@ class Bar(object):
         self.__last_buy_vol = pd[12]
         self.__mktime = pd[5]
     def dump(self):
-        print("current_time:%d open_price:%f close_price:%f high_price:%f low_price:%f volume:%d, last_sell_price:%f, last_buy_price:%f, last_sell_vol:%d, last_buy_vol:%d" %(self.__current_time,
+        MLog.write().debug("current_time:%d open_price:%f close_price:%f high_price:%f low_price:%f volume:%d, last_sell_price:%f, last_buy_price:%f, last_sell_vol:%d, last_buy_vol:%d" %(self.__current_time,
             self.__open_price, self.__close_price, self.__high_price, self.__low_price,
             self.__volume, self.__last_sell_price, self.__last_buy_price, self.__last_sell_vol,
             self.__last_buy_vol))

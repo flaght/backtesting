@@ -5,7 +5,7 @@
 账户资金
 '''
 from order import Direction, CombOffset
-import pdb
+from mlog import MLog
 class Account(object):
     def __init__(self):
         self.__account_id = '' #账户id
@@ -23,6 +23,13 @@ class Account(object):
         self.__withdraw = 0 # 累计出金金额
 
 
+    def reset(self):
+        self.__locked_cash = 0.0
+        self.__margin = 0.0
+        self.__commission = 0.0
+        self.__close_profit = 0.0
+        self.__position_profit = 0.0
+
     def close_profit(self):
         return self.__close_profit
 
@@ -31,6 +38,9 @@ class Account(object):
 
     def commission(self):
         return self.__commission
+
+    def available_cash(self):
+        return self.__available_cash
 
     def set_init_cash(self, init_cash):
         self.__available_cash +=  init_cash
@@ -109,8 +119,8 @@ class Account(object):
         self.__margin -= hold_v.margin() #归还使用保证金
 
 
+    def log(self):
+        return ("account:%d,available_cash:%f,locked_cash:%f,margin:%f,colse_profit:%f,commission:%f,starting_cash:%f,deoposit:%f,withdraw:%f"%(self.__account_id,
+                        self.__available_cash,self.__locked_cash,self.__margin,self.__close_profit, self.__commission,self.__starting_cash, self.__deposit,self.__withdraw))
     def dump(self):
-
-        print("account:%d,available_cash:%f,locked_cash:%f,margin:%f,colse_profit:%f,commission:%f,starting_cash:%f,deoposit:%f,withdraw:%f"%(self.__account_id,
-                        self.__available_cash,self.__locked_cash,self.__margin,self.__close_profit, self.__commission,
-                        self.__starting_cash,self.__deposit,self.__withdraw))
+        MLog.write().debug(self.log())

@@ -2,6 +2,7 @@
 # coding=utf-8
 
 from fc_prediction import Prediciton
+from mlog import MLog
 from instrument import Instrument
 from order import Order, CombOffset, OrderPrice, Direction, OrderStatus
 from account import Account
@@ -9,7 +10,6 @@ from daily_record import DailyRecord
 import numpy as np
 from collections import OrderedDict
 import time,datetime
-import pdb
 
 DEFAULT_AMOUNT = 1
 DEFAULT_CASH = 1000000
@@ -21,6 +21,8 @@ class Strange(object):
     
     
     def __init__(self, limit_order):
+        
+        
         self.__bar_list = []
         
 
@@ -35,8 +37,14 @@ class Strange(object):
 
         self.__working_limit_order = limit_order
 
-        # 暂时将账户和合约初始化放在策略内初始化
+
+
+        # 交易记录存储
+        self.__trader_record = OrderedDict()
         
+        
+        # 暂时将账户和合约初始化放在策略内初始化
+
         # 账户初始化
         self.__account = Account()
         self.__account.set_account_id(self.__account_id)
@@ -53,7 +61,14 @@ class Strange(object):
         self.__instrument.set_instrument_name('白银')
 
 
-    def calc_result(self):
+
+    def __reset(self):
+        self.__limit_order.clear()
+        self.__history_limit_order.clear()
+        self.__history_limit_order.clear()
+        self.__working_limit_order.clear()
+
+    def record(self):
         self.__account.dump()
         record = DailyRecord()
         record.set_close_profit(self.__account.close_profit())
@@ -61,7 +76,14 @@ class Strange(object):
         record.set_commssion(self.__account.commission())
         record.set_limit_volume(self.__history_limit_volumes)
         record.set_limit_order(self.__history_limit_order)
-        record.dump()
+        
+        
+        record.set_mktime(self.__bar_list[-1].mktime())
+
+        MLog.write().info('mkdate:%d, available_cash:%f,profit:%f'%(record.mktime(),self.__account.available_cash(), record.all_profit()))
+        self.__trader_record[record.mktime()] = record
+        self.__account.reset()
+        self.__reset()
 
     # close, high, low open  下一分钟收盘价  
     def __on_fc_single(self):
@@ -86,9 +108,9 @@ class Strange(object):
         long_profit = abs(order_price - next_price) * self.__instrument.min_limit_order_volume() # 多头最小利润
         
         if long_profit > long_fee:
-            print('long_profit:%f more than long_fee:%f allow open long'%(long_profit, long_fee))
+            MLog.write().debug('long_profit:%f more than long_fee:%f allow open long'%(long_profit, long_fee))
         else:
-            print('long_profit:%f less than long_fee:%f not open long'%(long_profit, long_fee))
+            MLog.write().debug('long_profit:%f less than long_fee:%f not open long'%(long_profit, long_fee))
         return 1 if long_profit > long_fee else 0
     
     # 空头成本控制
@@ -97,9 +119,9 @@ class Strange(object):
         short_profit = abs(order_price - next_price) * self.__instrument.min_limit_order_volume() # 空头最小利润
         
         if short_profit > short_fee:
-            print('short_profit:%f more than short_fee:%f allow  open short'%(short_profit, short_fee))
+            MLog.write().debug('short_profit:%f more than short_fee:%f allow  open short'%(short_profit, short_fee))
         else:
-            print('short_profit:%f less than short_fee:%f not open short'%(short_profit, short_fee))
+            MLog.write().debug('short_profit:%f less than short_fee:%f not open short'%(short_profit, short_fee))
         return 1 if short_profit > short_fee else 0
 
     def cancel_order(self):
@@ -125,10 +147,10 @@ class Strange(object):
                 self.__account.dump()
         else: # 已经持有多头仓
             for k,v in self.long_volumes.items():
-                print("hold long volumens:%d price:%f close_price:%f" %(v.amount(),v.limit_price(), last_bar.close_price()))
+                MLog.write().debug("hold long volumens:%d price:%f close_price:%f" %(v.amount(),v.limit_price(), last_bar.close_price()))
         #是否有空头仓
         if len(self.short_volumes) > 0:
-            print("long singal start close short volume")
+            MLog.write().debug("long singal start close short volume")
             for k,v in self.short_volumes.items():
                 order = self.__short_close(last_bar.last_sell_price(), v.amount(),last_bar.current_time())
                 order.set_hold_volume_id(v.trader_id())
@@ -152,10 +174,10 @@ class Strange(object):
                 self.__account.dump()
         else:
             for k,v in self.short_volumes.items():
-                print("hold short volumens:%d price:%f close_price:%f" %(v.amount(),v.limit_price(),last_bar.close_price()))
+                MLog.write().debug("hold short volumens:%d price:%f close_price:%f" %(v.amount(),v.limit_price(),last_bar.close_price()))
         # 是否持有多头仓
         if len(self.long_volumes) > 0: 
-            print("short singal start close long volume")
+            MLog.write().debug("short singal start close long volume")
             for k,v in self.long_volumes.items():
                 order = self.__long_close(last_bar.last_buy_price(), v.amount(), last_bar.current_time())
                 order.set_hold_volume_id(v.trader_id())
@@ -213,7 +235,6 @@ class Strange(object):
         vol.dump()
         # 判断是开仓还是平仓
         if vol.comb_offset_flag() == CombOffset.open: # 开仓
-            # print("open position price")
             if vol.direction() == Direction.buy_direction: # 多头仓
                 # self.long_volumes[vol.symbol()] = vol
                 self.long_volumes[vol.trader_id()] = vol
@@ -223,7 +244,7 @@ class Strange(object):
             self.__account.open_cash(order.margin(),vol.margin(), order.fee(), vol.fee())
         else: # 平仓
             # pdb.set_trace()
-            print("close position account:")
+            MLog.write().debug("close position account:")
             if vol.direction() == Direction.buy_direction: # 平空头仓
                 if self.short_volumes.has_key(order.hold_volume_id()):
                     v = self.short_volumes[order.hold_volume_id()]
@@ -239,7 +260,7 @@ class Strange(object):
 
     def on_order(self, order):
         if order.status() == OrderStatus.all_traded:
-            print 'order is all traded'
+            MLog.write().debug('order is all traded')
         self.__limit_order[order.order_id()] = order
         self.__history_limit_order[order.order_id()] = order
     
@@ -257,7 +278,7 @@ class Strange(object):
 
         # 距行情结束还有5分钟则全部平仓
         if bar.current_time() > time.mktime(datetime.datetime(bar.mktime() / 10000,bar.mktime() / 100 % 100, bar.mktime() % 100,14,55,00).timetuple()):
-            print("time out start close position")
+            MLog.write().debug("time out start close position")
             if len(self.short_volumes) > 0:
                 for k,v in self.short_volumes.items():
                     order = self.__short_close(bar.last_sell_price(), v.amount(),bar.current_time())
@@ -279,9 +300,9 @@ class Strange(object):
         # pdb.set_trace()
         # 多仓，空仓判断
         if close_price < next_price: # 多仓信号
-            print("long singal start")
+            MLog.write().debug("long singal start")
             self.__long_operation(next_price, self.__bar_list[-1], DEFAULT_AMOUNT)
         elif close_price > next_price: # 空仓信号
-            print("short singal start")
+            MLog.write().debug("short singal start")
             self.__short_operation(next_price, self.__bar_list[-1], DEFAULT_AMOUNT)
         

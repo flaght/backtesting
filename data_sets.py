@@ -3,8 +3,6 @@
 import numpy as np
 import pandas as pd
 import os
-import math
-import pdb
 from sklearn.preprocessing import MinMaxScaler
 
 

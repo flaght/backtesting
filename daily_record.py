@@ -2,11 +2,12 @@
 # coding=utf-8
 
 from collections import OrderedDict
+from mlog import MLog
 import copy
 
 class DailyRecord(object):
     def __init__(self):
-        self.__mkdate = 0 # 交易日
+        self.__mktime = 0 # 交易日
         self.__account_id = ''
         
         
@@ -24,6 +25,13 @@ class DailyRecord(object):
         self.__history_limit_volume = OrderedDict() # 交易记录
         self.__history_limit_order = OrderedDict() # 委托订单
 
+
+
+    def mktime(self):
+        return self.__mktime
+
+    def set_mktime(self, mktime):
+        self.__mktime = mktime
 
     def set_account_id(self, account_id):
         self.__account_id = account_id
@@ -56,7 +64,9 @@ class DailyRecord(object):
         self.__value =  self.__interests / self.__available_cash 
         self.__retrace_ment = ((self.__profit - self.__max_profit)) / (self.__max_profit + self.__available_cash)
 
-
+    def log(self):
+        return ('mkdate:%d,interests:%f,profit:%f,value:%f,retracement:%f'%(self.__mktime, 
+                self.__interests, self.all_profit(), self.__value, self.__retracement))
+    
     def dump(self):
-        print('interests:%f,profit:%f,value:%f,retracement:%f'%(self.__interests, 
-                self.all_profit(), self.__value, self.__retracement))
+        MLog.write().debug(self.log())
