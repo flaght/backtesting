@@ -4,7 +4,7 @@
 from collections import OrderedDict
 from mlog import MLog
 import copy
-
+import math
 class DailyRecord(object):
     def __init__(self):
         self.__mktime = 0 # 交易日
@@ -15,13 +15,16 @@ class DailyRecord(object):
         self.__profit = 0.0 # 当日盈亏
         self.__value = 0.0 # 当日净值 
         self.__value_chg = 0.0 # 涨跌幅
+        self.__log_chg = 0.0 # 日对数收益
         self.__retracement = 0.0 # 最大回撤
 
-        self._available_cash = 0.0 # 当日初始可用资金
+        self.__base_value = 0.0 # 当日初始可用资金
         self.__close_profit = 0.0  # 平仓收益
         self.__position_profit = 0.0 # 持仓收益
         self.__commission = 0.0 # 手续费
         self.__max_profit = 0.0 # 历史中最大收益
+        self.__last_value = 0.0 # 上一个交易日的净值
+        self.__last_profit = 0.0 # 上一个交易日的累计盈亏
         self.__history_limit_volume = OrderedDict() # 交易记录
         self.__history_limit_order = OrderedDict() # 委托订单
 
@@ -52,21 +55,36 @@ class DailyRecord(object):
         self.__history_limit_order = copy.deepcopy(limit_order)
 
 
-    def set_available(self, available_cash):
-        self.__available_cash = available_cash
+    def set_base_value(self,base_value):
+        self.__base_value = base_value
+
+    def set_max_profit(self, max_profit):
+        self.__max_profit = max_profit
+
+    def set_last_value(self, last_value):
+        self.__last_value = last_value
+
+    def set_last_profit(self, last_profit):
+        self.__last_profit = last_profit
+
+    def value(self):
+        return self.__value
 
     def all_profit(self):
         self.__profit = self.__close_profit + self.__position_profit  - self.__commission # 当日盈亏
         return self.__profit
 
     def calc_result(self):
-        self.__interests = self.__available_cash + self.__profit #每日权益
-        self.__value =  self.__interests / self.__available_cash 
-        self.__retrace_ment = ((self.__profit - self.__max_profit)) / (self.__max_profit + self.__available_cash)
-
+        self.__interests = self.__base_value + self.__profit #每日权益
+        self.__value =  self.__interests / self.__base_value 
+        self.__retracement = ((abs(self.__profit + self.__last_profit  - self.__max_profit)) / (self.__max_profit + self.__base_value)) * 100
+        self.__value_chg = ((self.__value - self.__last_value)  / self.__last_value * 100) if self.__last_value != 0.0 else 0.0
+        self.__log_chg = math.log(1 - self.__value_chg)
     def log(self):
-        return ('mkdate:%d,interests:%f,profit:%f,value:%f,retracement:%f'%(self.__mktime, 
-                self.__interests, self.all_profit(), self.__value, self.__retracement))
+        return ('mkdate:%d,interests:%f,profit:%f,total_profit:%f,max_profit:%f,value:%f,retracement:%f,base_value:%f,chg:%f,log_chg:%f'%(self.__mktime,
+            self.__interests, self.all_profit(), self.__last_profit,
+            self.__max_profit, self.__value, self.__retracement,
+            self.__base_value,self.__value_chg,self.__log_chg))
     
     def dump(self):
-        MLog.write().debug(self.log())
+        MLog.write().info(self.log())

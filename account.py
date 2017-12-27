@@ -42,6 +42,9 @@ class Account(object):
     def available_cash(self):
         return self.__available_cash
 
+    def starting_cash(self):
+        return self.__starting_cash
+
     def set_init_cash(self, init_cash):
         self.__available_cash +=  init_cash
         self.__deposit += init_cash

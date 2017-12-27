@@ -85,6 +85,35 @@ class Strange(object):
         self.__account.reset()
         self.__reset()
 
+    def calc_result(self):
+        max_profit = 0.0
+        total_profit = 0.0
+        base_value = 0.0
+        for key,value in self.__trader_record.items():
+            total_profit += value.all_profit()
+
+        starting_cash = self.__account.starting_cash()
+        base_value = (int(abs(total_profit) / starting_cash) + 1) * self.__account.starting_cash()
+
+        MLog.write().info('all:%f, base_value:%f',total_profit,base_value)
+
+
+        total_profit = 0.0
+
+        # 计算每日权益，每日净值, 涨跌幅，回撤，日对数收益
+        last_value = 0.0
+        for mktime,daily_record in self.__trader_record.items():
+            daily_record.set_base_value(base_value)
+            daily_record.set_last_value(last_value)
+            daily_record.set_max_profit(max_profit)
+            daily_record.set_last_profit(total_profit)
+            daily_record.calc_result()
+
+            total_profit += daily_record.all_profit()
+            if max_profit < total_profit:
+                max_profit = total_profit
+            last_value = daily_record.value()
+            daily_record.dump()
     # close, high, low open  下一分钟收盘价  
     def __on_fc_single(self):
         for bar in self.__bar_list:

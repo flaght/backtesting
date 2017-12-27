@@ -137,6 +137,7 @@ class LoopBack(object):
                 self.__on_bar(data.loc[index].values)
                 # print('<---------------------end:%d----------------------------------------->\n'%(index+1))
             self.__strategy.record()
+
     def calc_result(self):
         self.__strategy.calc_result()
 
@@ -145,7 +146,7 @@ if __name__ == '__main__':
     lb = LoopBack()
     lb.set_symbol('ag')
     # lb.load_history_data('./../fc/data/out_dir/ag/ag2017/ag0001_20171121.csv')
-    lb.load_history_dir('./../fc/data/out_dir/ag/ag2017/')
+    lb.load_history_dir('./data/ag/ag2017/')
     lb.run_loop_back()
     # print('<----------------------------------->')
-    # lb.calc_result()
+    lb.calc_result()
