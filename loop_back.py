@@ -141,6 +141,9 @@ class LoopBack(object):
     def calc_result(self):
         self.__strategy.calc_result()
 
+    def save(self):
+        self.__strategy.save()
+
 if __name__ == '__main__':
     MLog.config(name="look_back")
     lb = LoopBack()
@@ -150,3 +153,4 @@ if __name__ == '__main__':
     lb.run_loop_back()
     # print('<----------------------------------->')
     lb.calc_result()
+    # lb.save()

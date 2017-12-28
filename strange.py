@@ -6,10 +6,11 @@ from mlog import MLog
 from instrument import Instrument
 from order import Order, CombOffset, OrderPrice, Direction, OrderStatus
 from account import Account
-from daily_record import DailyRecord
+from daily_record import DailyRecord,SummaryRecord
 import numpy as np
 from collections import OrderedDict
 import time,datetime
+import pandas as pd
 
 DEFAULT_AMOUNT = 1
 DEFAULT_CASH = 1000000
@@ -94,12 +95,10 @@ class Strange(object):
 
         starting_cash = self.__account.starting_cash()
         base_value = (int(abs(total_profit) / starting_cash) + 1) * self.__account.starting_cash()
-
         MLog.write().info('all:%f, base_value:%f',total_profit,base_value)
-
-
         total_profit = 0.0
 
+        df = pd.DataFrame(columns = ['mktime','interests','value','retrace','chg','log_chg','profit'])
         # 计算每日权益，每日净值, 涨跌幅，回撤，日对数收益
         last_value = 0.0
         for mktime,daily_record in self.__trader_record.items():
@@ -108,12 +107,47 @@ class Strange(object):
             daily_record.set_max_profit(max_profit)
             daily_record.set_last_profit(total_profit)
             daily_record.calc_result()
+            daily_record.dump()
+            df = df.append(pd.DataFrame({'mktime':mktime, 'interests':daily_record.interests(),
+                                         'value':daily_record.value(), 'retrace': daily_record.retrace(),
+                                         'chg':daily_record.chg(),'log_chg':daily_record.log_chg(),
+                                         'profit':daily_record.all_profit()},index=['mktime']), ignore_index=True)
 
             total_profit += daily_record.all_profit()
             if max_profit < total_profit:
                 max_profit = total_profit
             last_value = daily_record.value()
-            daily_record.dump()
+            base_value += daily_record.all_profit()
+            
+        chg_mean = np.mean(df['log_chg'])
+        chg_std = np.std(df['log_chg'])
+
+        summary_record = SummaryRecord()
+        summary_record.set_chg_mean(chg_mean)
+        summary_record.set_chg_std(chg_std)
+        summary_record.set_trade_count(df.shape[0])
+        summary_record.set_final_value(df['value'].values[-1])
+        summary_record.set_max_retr(np.min(df['retrace']))
+
+
+        summary_record.calc_record(df[df['chg'] > 0.00].shape[0])
+        summary_record.dump()
+        df.to_csv('result_strange.csv', encoding = 'utf-8')
+
+
+    def save(self):
+        '''
+        filename = 'strange' + '.csv'
+        fieldnames = ['mktime','interests','value','retrace','chg','log_chg','profit',]
+        with open(filename, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for mktime,daily_record in self.__trader_record.items():
+                writer.writerow({'mktime':mktime,'interests':daily_record.interests(),'value':daily_record.value(),'retrace':daily_record.retrace(),
+                                 'chg':daily_record.chg(),'log_chg':daily_record.log_chg(),'profit':daily_record.all_profit()})
+        '''
+
+
     # close, high, low open  下一分钟收盘价  
     def __on_fc_single(self):
         for bar in self.__bar_list:
