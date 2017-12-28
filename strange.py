@@ -158,7 +158,6 @@ class Strange(object):
                 x = np.vstack((x,t))
         pred = Prediciton()
         price = pred.signal(x)
-        print price
         return  price
         # rand =  int(np.std(x) * 1000  % 2)
         # if rand == 0:

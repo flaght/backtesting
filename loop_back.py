@@ -133,9 +133,7 @@ class LoopBack(object):
         for mkdate,file in self.__history_file.items():
             data = pd.read_csv(file)
             for index in data.index:
-                # print('<--------------------start:%d---------------------------------------->'%(index+1))
                 self.__on_bar(data.loc[index].values)
-                # print('<---------------------end:%d----------------------------------------->\n'%(index+1))
             self.__strategy.record()
 
     def calc_result(self):

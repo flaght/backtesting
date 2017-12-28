@@ -73,6 +73,7 @@ class Prediciton(object):
         mean_data = np.mean(data_set, axis=0)
         std_data = np.std(data_set, axis=0)
         normalized_data = (data_set - mean_data) / std_data
+        normalized_data = np.nan_to_num(normalized_data)
         scaler = MinMaxScaler()
         scaler.fit(normalized_data)
         normalized_data = scaler.transform(normalized_data)
