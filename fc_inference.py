@@ -19,8 +19,7 @@ def chg_inference_regular(regularizes):
 
 
 def chg_nn_layer(input_tensor, input_dim, out_dim, layer_name, monitor, avg_class=None,reuse=False, act=tf.nn.relu):
-
-    with tf.variable_scope(layer_name):
+    with tf.variable_scope(layer_name,reuse=reuse):
         weights = tf.get_variable("weight", [input_dim, out_dim],
                                   initializer=tf.truncated_normal_initializer(stddev=0.1))
         if monitor != None:
@@ -47,6 +46,7 @@ def chg_nn_layer(input_tensor, input_dim, out_dim, layer_name, monitor, avg_clas
 
 
 def chg_inference(input_tensor, monitor, avg_class, reuse): #涨跌幅前向计算
+    
     hidden1 = chg_nn_layer(input_tensor, INPUT_NODE, neurons_layer1,
                            'layer1', monitor,avg_class, reuse)
 
