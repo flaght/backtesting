@@ -57,27 +57,48 @@ class PDataSet(object):
     def _calc_price_data(self, data_train, data_test):
 
         # 标准差标准化(观察值减去平均数，再除以标准差)
-        normalized_train_data = (data_train - np.mean(data_train, axis=0)) / np.std(data_train, axis=0)
-        normalized_test_data = (data_test - np.mean(data_test, axis=0)) / np.std(data_test, axis=0)
-        
-        scaler = MinMaxScaler()
-        scaler.fit(normalized_train_data)
+        # normalized_train_data = (data_train - np.mean(data_train, axis=0)) / np.std(data_train, axis=0)
+        # normalized_test_data = (data_test - np.mean(data_test, axis=0)) / np.std(data_test, axis=0)
 
-        #归一化
-        normalized_train_data = scaler.transform(normalized_train_data)
-        normalized_test_data = scaler.transform(normalized_test_data)
+        # scaler = MinMaxScaler()
+        # scaler.fit(normalized_train_data)
 
-        # normalized_train_data = data_train
-        # normalized_test_data = data_test
+        # 归一化
+        # normalized_train_data = scaler.transform(normalized_train_data)
+        # normalized_test_data = scaler.transform(normalized_test_data)
+
+        normalized_train_data = data_train
+        normalized_test_data = data_test
 
         for i in range(len(data_train) - self._train_step - self._dim - 1):
             if i % self._batch_size == 0:
                 self._batch_index_train.append(i)
             for u in range(self._train_step):
                 if u == 0:
-                    x = normalized_train_data[u + i:u + i + self._dim, :].reshape(-1, self._dim * data_train.shape[1])
+                    # x = normalized_train_data[u + i:u + i + self._dim, :].reshape(-1, self._dim * data_train.shape[1])
+                    x = normalized_train_data[u + i:u + i + self._dim, :].copy()
+                    close_price = normalized_train_data[u + i + self._dim,0].copy()
+                    # 标准化
+                    x[:,0:4] = np.log(x[:,0:4] / close_price)
+                    x[:,5] = np.log(x[:,5] / close_price)
+                    # 归一化
+                    for i in range(data_train.shape[1]):
+                        x[:,i] = (x[:,i] - x[:,i].min()) / (x[:,i].max() - x[:,i].min()) 
+
+                    x = np.nan_to_num(x)
+                    x = x.reshape(-1, self._dim * data_train.shape[1])
                 else:
-                    t = normalized_train_data[u + i:u + i + self._dim, :].reshape(-1, self._dim * data_train.shape[1])
+                    # t = normalized_train_data[u + i:u + i + self._dim, :].reshape(-1, self._dim * data_train.shape[1])
+                    t = normalized_train_data[u + i:u + i + self._dim, :].copy()
+                    # 标准化
+                    close_price = normalized_train_data[u + i + self._dim,0].copy()
+                    t[:,0:4] = np.log(t[:,0:4] / close_price)
+                    t[:,5] = np.log(t[:,5] / close_price) 
+                    # 归一化
+                    for i in range(data_train.shape[1]):
+                        t[:,i] = (t[:,i] - t[:,i].min()) / (t[:,i].max() - t[:,i].min()) 
+                    t = np.nan_to_num(t)
+                    t = t.reshape(-1, self._dim * data_train.shape[1])
                     x = np.vstack((x, t))
 
             y = normalized_train_data[i + self._dim + self._next_time + 1:i + self._dim + self._next_time + 1 + self._train_step, 0, np.newaxis]
@@ -85,15 +106,35 @@ class PDataSet(object):
             self._x_train.append(x)
             self._y_train.append(y)
 
+
+        '''
         test_step = self._test_step if (len(data_test) - 1) > self._test_step else (len(data_test) - 1)
         test_size = (len(normalized_test_data) + test_step - 1) // test_step
 
         for i in range(test_size-1):
             for u in range(test_step - self._dim - 1):
                 if u == 0:
-                    tx = normalized_test_data[u + i * test_step: u + i * test_step + self._dim,:].reshape(-1, self._dim * data_test.shape[1])
+                    # tx = normalized_test_data[u + i * test_step: u + i * test_step + self._dim,:].reshape(-1, self._dim * data_test.shape[1])
+                    tx = normalized_test_data[u + i * test_step: u + i * test_step + self._dim,:].copy()
+                    close_price = normalized_test_data[u + i * test_step + self._dim,0].copy()
+                    # 标准化
+                    tx[:,0:4] = np.log(tx[:,0:4] / close_price)
+                    tx[:,5] = np.log(tx[:,5] / close_price)
+                    # 归一化 
+                    for i in range(data_train.shape[1]):
+                        tx[:,i] = (tx[:,i] - tx[:,i].min()) / (tx[:,i].max() - tx[:,i].min()) 
+                    tx = tx.reshape(-1,self._dim * data_test.shape[1])
                 else:
-                    tt = normalized_test_data[u + i * test_step: u + i * test_step + self._dim,:].reshape(-1, self._dim * data_test.shape[1])
+                    # tt = normalized_test_data[u + i * test_step: u + i * test_step + self._dim,:].reshape(-1, self._dim * data_test.shape[1])
+                    tt = normalized_test_data[u + i * test_step: u + i * test_step + self._dim,:].copy()
+                    close_price = normalized_test_data[u + i * test_step + self._dim,0].copy()
+                    # 标准化
+                    tt[:,0:4] = np.log(tt[:,0:4] / close_price)
+                    tt[:,5] = np.log(tt[:,5] / close_price)
+                    # 归一化
+                    for i in range(data_train.shape[1]):
+                        tt[:,i] = (tt[:,i] - tt[:,i].min()) / (tt[:,i].max() - tt[:,i].min()) 
+                    tt = tt.reshape(-1,self._dim * data_test.shape[1])
                     tx = np.vstack((tx,tt))
  
             ty = normalized_test_data[i * (test_step - self._dim) + self._dim + 1 + self._next_time:
@@ -104,13 +145,21 @@ class PDataSet(object):
             self._x_test.append(tx)
             self._y_test.append(ty)
             self._test_step = test_step - self._dim - 1
+        '''
+
+        # scaler = MinMaxScaler()
+        # scaler.fit(self._x_train)
+
+        # self._x_train = scaler.transform(self._x_train)
+        # self._x_test = scaler.transform(self._x_test)
+
     
     def file_name(self):
         return self._file_name
 
     def __calc_model_data(self, data):
         data = data.drop(
-            ['Unnamed: 0', 'date', 'mtd', 'pabp', 'pabv', 'pasp', 'pasv', 'plbp', 'plbv', 'plsp', 'plsv', 'time',
+            ['Unnamed: 0' ,'date', 'mtd', 'pabp', 'pabv', 'pasp', 'pasv', 'plbp', 'plbv', 'plsp', 'plsv', 'time',
              'vol'], 1)
         n = data.shape[0]
 
@@ -124,11 +173,6 @@ class PDataSet(object):
         data_train = data[np.arange(train_start, train_end), :]
         data_test = data[np.arange(test_start, test_end), :]
         
-        #print  data_train
-        #print '-------->'
-        #print  data_test
-        #print '-------->'
-        #print  data
         self._calc_price_data(data_train, data_test)
 
     def train_batch(self):
@@ -138,10 +182,28 @@ class PDataSet(object):
         return self._x_test, self._y_test
 
     def calc_etf(self, filename):
-        #print filename
         self._file_name = filename
         data = pd.read_csv(filename)
-        print filename
+        # print filename
+
+        # 买卖盘报价差
+        data['lbsp_diff'] = np.fabs(data['plsp'] - data['plbp'])
+
+        # 买卖盘平均价格
+        data['lbsp_avg'] = (data['plsp'] + data['plbp']) / 2
+        # 买卖盘深度
+        data['lbs_deep'] = (data['plbv'] + data['plsv'])
+
+        # 委买委卖量之差
+        data['lbsv_diff'] = np.fabs(data['plsv'] - data['plbv'])
+
+        # 计算涨跌幅:(close - open) / open * 100%
+        t_close = data['close'][1:]
+        y_close = data['close'][:-1]
+        risk_fail = ((t_close.values - y_close.values) / y_close.values) * 100
+        first = np.array([0.])
+        risk_fail = np.concatenate((first, risk_fail), axis=0)
+        data['risk_fail'] = risk_fail
         self.__calc_model_data(data)
 
 
@@ -175,7 +237,7 @@ class GFDataSet(object):
         # 计算涨跌幅:(close - open) / open * 100%
         t_close = data['close'][1:]
         y_close = data['close'][:-1]
-        risk_fail = ((t_close.values - y_close.values) / y_close.values) / 100
+        risk_fail = ((t_close.values - y_close.values) / y_close.values) * 100
         first = np.array([0.])
         risk_fail = np.concatenate((first, risk_fail), axis=0)
         data['risk_fail'] = risk_fail
@@ -248,7 +310,7 @@ if __name__ == '__main__':
     #    input = raw_input("Enter")
     #    print '-------------->'
     data_set = PDataSet()
-    data_set.calc_etf('./data/out_dir/ag/ag2016/ag1612_20160906.csv')
+    data_set.calc_etf('./../fc/data/out_dir/ag/ag2016/ag1606_20160105.csv')
     batch_index_train, train_x, train_y = data_set.train_batch()
     print batch_index_train
     print '-------->'

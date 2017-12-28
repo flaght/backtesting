@@ -7,7 +7,7 @@ import numpy as np
 import os
 import fc_inference
 
-INPUT_NODE = 4 * 4
+INPUT_NODE = 9 * 4
 #n_target = 1
 LEARNING_RATE_BASE = 0.0 
 LEARNING_RATE_DECAY = 0.99
@@ -64,7 +64,7 @@ def train(data_sets, batch_size = 50, time_step = 55):
     #                                           len(train_x) * 2000,
     #                                           LEARNING_RATE_DECAY)
 
-    train_step = tf.train.AdadeltaOptimizer(0.01).minimize(loss, global_step)
+    train_step = tf.train.AdadeltaOptimizer(0.05).minimize(loss, global_step)
 
     #with tf.control_dependencies([train_step, variable_averages_op]):
     #    train_op = tf.no_op(name='train')
@@ -99,8 +99,19 @@ def main(argv=None):
    # data_set = PDataSet()
    # data_set.calc_etf('./data/out_dir/ag1606_20160104.csv')
    # train(data_set, data_set.batch_size(),data_set.train_step())
+   np.set_printoptions(threshold=np.inf)
    data_sets = DataSets()
-   data_sets.gf_etf('./data/temp')
+   data_sets.gf_etf('./../fc/data/temp_train/')
+   
+   # while data_sets.is_range():
+   #    data_set = data_sets.train_batch()
+   #    print("filename %s" %(data_set.file_name()))
+   #    batch_index, train_x, train_y = data_set.train_batch()
+   #    print batch_index
+   #    print '<------------------->'
+   #    print train_x
+   #    print '<------------------->'
+   #    print train_y
    train(data_sets)
 
 if __name__ == '__main__':

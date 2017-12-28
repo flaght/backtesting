@@ -1,7 +1,7 @@
 # coding: utf-8
 
 import tensorflow as tf
-INPUT_NODE = 4 * 4
+INPUT_NODE = 9 * 4
 neurons_layer1 = 1024
 neurons_layer2 = 512
 neurons_layer3 = 256
