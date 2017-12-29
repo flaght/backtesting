@@ -93,7 +93,7 @@ class PDataSet(object):
                     # 标准化
                     close_price = normalized_train_data[u + i + self._dim,0].copy()
                     t[:,0:4] = np.log(t[:,0:4] / close_price)
-                    t[:,5] = np.log(t[:,5] / close_price) 
+                    t[:,6] = np.log(t[:,6] / close_price) 
                     # 归一化
                     for i in range(data_train.shape[1]):
                         t[:,i] = (t[:,i] - t[:,i].min()) / (t[:,i].max() - t[:,i].min()) 
@@ -159,8 +159,7 @@ class PDataSet(object):
 
     def __calc_model_data(self, data):
         data = data.drop(
-            ['Unnamed: 0' ,'date', 'mtd', 'pabp', 'pabv', 'pasp', 'pasv', 'plbp', 'plbv', 'plsp', 'plsv', 'time',
-             'vol'], 1)
+            ['Unnamed: 0' ,'date', 'mtd', 'pabp', 'pabv', 'pasp', 'pasv', 'plbp', 'plbv', 'plsp', 'plsv', 'time'], 1)
         n = data.shape[0]
 
         data = data.values

@@ -131,6 +131,7 @@ class LoopBack(object):
 
     def run_loop_back(self):
         for mkdate,file in self.__history_file.items():
+            print file
             data = pd.read_csv(file)
             for index in data.index:
                 self.__on_bar(data.loc[index].values)
@@ -147,7 +148,7 @@ if __name__ == '__main__':
     lb = LoopBack()
     lb.set_symbol('ag')
     # lb.load_history_data('./../fc/data/out_dir/ag/ag2017/ag0001_20171121.csv')
-    lb.load_history_dir('./data/ag/ag2017/dev/')
+    lb.load_history_dir('./../test/temp/')
     lb.run_loop_back()
     # print('<----------------------------------->')
     lb.calc_result()

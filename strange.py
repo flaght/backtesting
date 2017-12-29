@@ -152,13 +152,21 @@ class Strange(object):
     def __on_fc_single(self):
         for bar in self.__bar_list:
             if self.__bar_list.index(bar) == 0:
-                x = np.array([bar.close_price(), bar.high_price(), bar.low_price(), bar.open_price()])
+                x = np.array([bar.close_price(), bar.high_price(), bar.low_price(), bar.open_price(),bar.volume(),
+                             bar.last_buy_price(),bar.last_buy_vol(),bar.last_sell_price(),bar.last_sell_vol()])
             else:
-                t = np.array([bar.close_price(), bar.high_price(), bar.low_price(), bar.open_price()])
+                t = np.array([bar.close_price(), bar.high_price(), bar.low_price(), bar.open_price(),bar.volume(),
+                             bar.last_buy_price(),bar.last_buy_vol(),bar.last_sell_price(),bar.last_sell_vol()])
                 x = np.vstack((x,t))
+
         pred = Prediciton()
-        price = pred.signal(x)
-        return  price
+        close_price = pred.new_signal(x, '../test/model/')
+        print self.__bar_list[-1].current_time()
+        print close_price
+        return close_price
+        # pred = Prediciton()
+        # price = pred.signal(x)
+        # return  price
         # rand =  int(np.std(x) * 1000  % 2)
         # if rand == 0:
         #    return np.mean(x) + np.std(x)

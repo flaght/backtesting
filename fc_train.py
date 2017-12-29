@@ -7,7 +7,7 @@ import numpy as np
 import os
 import fc_inference
 
-INPUT_NODE = 9 * 4
+INPUT_NODE = 10 * 4
 #n_target = 1
 LEARNING_RATE_BASE = 0.0 
 LEARNING_RATE_DECAY = 0.99

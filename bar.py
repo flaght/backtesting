@@ -28,6 +28,7 @@ class Bar(object):
         self.__mktime = 0 # 交易日
 
     def set_pd(self, pd):
+        # 1- close 3-high 4-low 6-open 11-plbp 12-plbv 13-plsp 14-plsv 16-volume
         self.__current_time = pd[15]
         self.__open_price = pd[6]
         self.__close_price = pd[1]
@@ -147,3 +148,10 @@ class Bar(object):
 
     def last_buy_price(self):
         return self.__last_buy_price
+
+    def last_buy_vol(self):
+        return self.__last_buy_vol
+
+    def last_sell_vol(self):
+        return self.__last_sell_vol
+
