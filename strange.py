@@ -25,8 +25,10 @@ class Strange(object):
         
         
         self.__bar_list = []
-        
 
+
+        self.__pred = Prediciton()
+        self.__pred.init_model(1,'../test/model/')
         self.__limit_order = OrderedDict() # 委托单队列
         self.long_volumes = OrderedDict() #当前多头持仓情况
         self.short_volumes = OrderedDict() #当前空头持仓情况
@@ -159,10 +161,7 @@ class Strange(object):
                              bar.last_buy_price(),bar.last_buy_vol(),bar.last_sell_price(),bar.last_sell_vol()])
                 x = np.vstack((x,t))
 
-        pred = Prediciton()
-        close_price = pred.new_signal(x, '../test/model/')
-        print self.__bar_list[-1].current_time()
-        print close_price
+        close_price = self.__pred.new_signal(x)
         return close_price
         # pred = Prediciton()
         # price = pred.signal(x)

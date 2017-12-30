@@ -49,29 +49,30 @@ class Prediciton(object):
                                              }
                                   )
             return mse_final
-    
-    def prediction_price(self, data_set_x,time_step, model_file):
-        
-        x = tf.placeholder(dtype=tf.float32, shape=[None,time_step, INPUT_NODE])
-        reshape_x = tf.reshape(x,[-1, INPUT_NODE])
-        global GLOBAL_COUNT
 
-        GLOBAL_COUNT += 1
-        if GLOBAL_COUNT == 1:
-            y_ = fc_inference.chg_inference(reshape_x, None, None, False)
-        else:
-            y_ = fc_inference.chg_inference(reshape_x,None,None,True)
+
+
+    def init_model(self, time_step,  model_file):
+        self.__x = tf.placeholder(dtype=tf.float32, shape=[None,time_step, INPUT_NODE])
+        reshape_x = tf.reshape(self.__x,[-1, INPUT_NODE])
+        
+        self.__y_ = fc_inference.chg_inference(reshape_x, None, None, False)
 
         saver = tf.train.Saver(tf.global_variables())
-        with tf.Session() as sess:
-            tf.global_variables_initializer().run()
-            model_file = tf.train.latest_checkpoint(model_file)
-            saver.restore(sess, model_file)
-            out = sess.run([y_], feed_dict={x: data_set_x[0:1]})
-            return out
+
+        init = tf.global_variables_initializer()
+        self.__sess = tf.Session()
+        self.__sess.run(init)
+        latest_checkpoint = tf.train.latest_checkpoint(model_file)
+        saver.restore(self.__sess,latest_checkpoint)
+
+    
+    def prediction_price(self, data_set_x,time_step):        
+        out = self.__sess.run([self.__y_], feed_dict={self.__x:data_set_x[0:1]})
+        return out
 
 
-    def new_signal(self, data_sets, model_file):
+    def new_signal(self, data_sets):
         data_sets = np.column_stack((data_sets,data_sets[:,6] - data_sets[:,4]))
         
         #lbsp_avg 买卖盘平均价
@@ -112,7 +113,7 @@ class Prediciton(object):
         input_data_x = []
         input_data_x.append(input_data)
 
-        out = self.prediction_price(input_data_x,1, model_file)
+        out = self.prediction_price(input_data_x,1)
         return np.squeeze(np.array(out[0:1]))
 
     def signal(self, data_set, model_file):
@@ -171,8 +172,11 @@ def test_three():
 
 
     pred = Prediciton()
-    print pred.new_signal(data_sets,model_file)
-
+    pred.init_model(1,model_file)
+    j = 100
+    while j > 0:
+        print pred.new_signal(data_sets)
+        j -= 1
     # print input_data
 
 def main(argv=None):
