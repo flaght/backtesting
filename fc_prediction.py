@@ -6,6 +6,7 @@ import os
 import argparse
 import csv
 import numpy as np
+import pandas as pd
 from data_sets import DataSets, GFDataSet, PDataSet
 import pdb
 from sklearn.preprocessing import MinMaxScaler
@@ -21,9 +22,12 @@ class Prediciton(object):
 
     def init_model(self, time_step,  model_file):
         self.__x = tf.placeholder(dtype=tf.float32, shape=[None,time_step, INPUT_NODE])
+        self.__y = tf.placeholder(dtype=tf.float32, shape=[None, time_step, fc_inference.n_target])
+
         reshape_x = tf.reshape(self.__x,[-1, INPUT_NODE])
         
         self.__y_ = fc_inference.chg_inference(reshape_x, None, None, False)
+        self.__y_reshape = tf.reshape(self.__y,[-1])
 
         saver = tf.train.Saver(tf.global_variables())
 
@@ -32,6 +36,9 @@ class Prediciton(object):
         self.__sess.run(init)
         latest_checkpoint = tf.train.latest_checkpoint(model_file)
         saver.restore(self.__sess,latest_checkpoint)
+
+        self.__out_list = []
+        self.__yt_list = []
 
     
     def prediction_price(self, data_set_x,time_step):        
@@ -43,10 +50,17 @@ class Prediciton(object):
             data_set = data_sets.batch()
             batch_index, test_x, test_y = data_set.test_batch()
             for step in range(len(batch_index) - 1):
-                out = self.__sess.run([self.__y_],feed_dict={self.__x:test_x[batch_index[step]:batch_index[step+1]]})
-                print out
-    
+                out,yt = self.__sess.run([self.__y_,self.__y_reshape],feed_dict={self.__x:test_x[batch_index[step]:batch_index[step + 1]],
+                                                                                 self.__y:test_y[batch_index[step]:batch_index[step + 1]]})
+                self.__out_list.append(np.squeeze(np.array(out)).T)
+                self.__yt_list.append(yt.T)
 
+    def save(self):
+        df_out = pd.DataFrame(np.array(self.__out_list[0:1]).T)
+        df_yt = pd.DataFrame(np.array(self.__yt_list[0:1]).T)
+
+        df_out.to_csv("df_out1.csv", encoding = "utf-8")
+        df_yt.to_csv("df_yt1.csv", encoding = "utf-8")
 
     def new_signal(self, data_sets):
         data_sets = np.column_stack((data_sets,data_sets[:,6] - data_sets[:,4]))
@@ -156,13 +170,13 @@ def test_three():
     # print input_data
 
 def test_four():
-    model_file = './../test/model/'
+    model_file = './../../result/20171231/model/'
     pred = Prediciton()
     pred.init_model(55, model_file)
     data_sets = DataSets()
-    data_sets.gf_etf('./data/ag/ag2017/dev/')
+    data_sets.gf_etf('./../../data/out_dir/temp/')
     pred.prediction(data_sets)
-
+    pred.save()
 
 def main(argv=None):
     test_four()
