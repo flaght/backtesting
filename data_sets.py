@@ -29,14 +29,20 @@ class DataSets(object):
         self._index_in_epoch+=1
         return data_set
 
+    def batch(self):
+        data_set = self._data_sets[self._index_in_epoch]
+        self._index_in_epoch += 1
+        return data_set
+
 class PDataSet(object):
 
-    def __init__(self, dim=4, next_time=1, batch_size=50, train_step=55, test_step=1000):
+    def __init__(self, dim=4, next_time=1, batch_size=50, train_step=55, test_step=55):
         self._x_train = []
         self._y_train = []
         self._batch_index_train = []
         self._x_test = []
         self._y_test = []
+        self._batch_index_test = []
         self._batch_size = batch_size
         self._train_step = train_step
         self._test_step = test_step
@@ -80,7 +86,7 @@ class PDataSet(object):
                     close_price = normalized_train_data[u + i + self._dim,0].copy()
                     # 标准化
                     x[:,0:4] = np.log(x[:,0:4] / close_price)
-                    x[:,5] = np.log(x[:,5] / close_price)
+                    x[:,6] = np.log(x[:,6] / close_price)
                     # 归一化
                     for i in range(data_train.shape[1]):
                         x[:,i] = (x[:,i] - x[:,i].min()) / (x[:,i].max() - x[:,i].min()) 
@@ -107,10 +113,47 @@ class PDataSet(object):
             self._y_train.append(y)
 
 
-        '''
-        test_step = self._test_step if (len(data_test) - 1) > self._test_step else (len(data_test) - 1)
-        test_size = (len(normalized_test_data) + test_step - 1) // test_step
+        self._test_step = self._test_step if (len(normalized_test_data) - 1) > self._test_step else (len(normalized_test_data) - 1)
+        # test_size = (len(normalized_test_data) + test_step - 1) // test_step
 
+        for i in range(len(data_test) - self._test_step - self._dim - 1):
+            if i % self._batch_size == 0:
+                self._batch_index_test.append(i)
+
+            for u in range(self._test_step):
+                if u == 0:
+                    # x = normalized_train_data[u + i:u + i + self._dim, :].reshape(-1, self._dim * data_train.shape[1])
+                    x = normalized_test_data[u + i:u + i + self._dim, :].copy()
+                    close_price = normalized_test_data[u + i + self._dim,0].copy()
+                    # 标准化
+                    x[:,0:4] = np.log(x[:,0:4] / close_price)
+                    x[:,6] = np.log(x[:,6] / close_price)
+                    # 归一化
+                    for i in range(data_test.shape[1]):
+                        x[:,i] = (x[:,i] - x[:,i].min()) / (x[:,i].max() - x[:,i].min()) 
+
+                    x = np.nan_to_num(x)
+                    x = x.reshape(-1, self._dim * data_train.shape[1])
+                else:
+                    # t = normalized_train_data[u + i:u + i + self._dim, :].reshape(-1, self._dim * data_train.shape[1])
+                    t = normalized_test_data[u + i:u + i + self._dim, :].copy()
+                    # 标准化
+                    close_price = normalized_test_data[u + i + self._dim,0].copy()
+                    t[:,0:4] = np.log(t[:,0:4] / close_price)
+                    t[:,6] = np.log(t[:,6] / close_price) 
+                    # 归一化
+                    for i in range(data_test.shape[1]):
+                        t[:,i] = (t[:,i] - t[:,i].min()) / (t[:,i].max() - t[:,i].min()) 
+                    t = np.nan_to_num(t)
+                    t = t.reshape(-1, self._dim * data_test.shape[1])
+                    x = np.vstack((x, t))
+
+            y = normalized_test_data[i + self._dim + self._next_time + 1:i + self._dim + self._next_time + 1 + self._test_step, 0, np.newaxis]
+            #y = data_train[i + self._dim + self._next_time + 1:i + self._dim + self._next_time + 1 + self._train_step, 0, np.newaxis]
+            self._x_test.append(x)
+            self._y_test.append(y)
+
+        '''
         for i in range(test_size-1):
             for u in range(test_step - self._dim - 1):
                 if u == 0:
@@ -119,9 +162,9 @@ class PDataSet(object):
                     close_price = normalized_test_data[u + i * test_step + self._dim,0].copy()
                     # 标准化
                     tx[:,0:4] = np.log(tx[:,0:4] / close_price)
-                    tx[:,5] = np.log(tx[:,5] / close_price)
+                    tx[:,6] = np.log(tx[:,6] / close_price)
                     # 归一化 
-                    for i in range(data_train.shape[1]):
+                    for i in range(data_test.shape[1]):
                         tx[:,i] = (tx[:,i] - tx[:,i].min()) / (tx[:,i].max() - tx[:,i].min()) 
                     tx = tx.reshape(-1,self._dim * data_test.shape[1])
                 else:
@@ -130,9 +173,9 @@ class PDataSet(object):
                     close_price = normalized_test_data[u + i * test_step + self._dim,0].copy()
                     # 标准化
                     tt[:,0:4] = np.log(tt[:,0:4] / close_price)
-                    tt[:,5] = np.log(tt[:,5] / close_price)
+                    tt[:,6] = np.log(tt[:,6] / close_price)
                     # 归一化
-                    for i in range(data_train.shape[1]):
+                    for i in range(data_test.shape[1]):
                         tt[:,i] = (tt[:,i] - tt[:,i].min()) / (tt[:,i].max() - tt[:,i].min()) 
                     tt = tt.reshape(-1,self._dim * data_test.shape[1])
                     tx = np.vstack((tx,tt))
@@ -178,7 +221,7 @@ class PDataSet(object):
         return self._batch_index_train, self._x_train, self._y_train
 
     def test_batch(self):
-        return self._x_test, self._y_test
+        return self._batch_index_test, self._x_test, self._y_test
 
     def calc_etf(self, filename):
         self._file_name = filename
@@ -313,9 +356,16 @@ if __name__ == '__main__':
     batch_index_train, train_x, train_y = data_set.train_batch()
     print batch_index_train
     print '-------->'
-    print train_x[0:1]
+    # print train_x[0:1]
     print '--------->'
-    print train_y[0:1]
+    # print train_y[0:1]
+
+
+    batch_index_test, test_x, test_y = data_set.test_batch()
+    print '------->'
+    # print test_x[0:1]
+    print '------->'
+    # print test_y[0:1]
     # print len(train_x)
     # print len(train_y)
     # print '------------>'

@@ -80,7 +80,7 @@ def train(data_sets, batch_size = 50, time_step = 55):
         tf.global_variables_initializer().run()
         for i in range(100):
             while data_sets.is_range():
-                data_set = data_sets.train_batch()
+                data_set = data_sets.batch()
                 print("filename %s" %(data_set.file_name()))
                 batch_index, train_x, train_y = data_set.train_batch()
                 for step in range(len(batch_index) - 1):

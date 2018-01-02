@@ -18,39 +18,6 @@ FLAGS = None
 GLOBAL_COUNT = 0
 
 class Prediciton(object):
-    def prediction(self, data_sets, time_step):
-        x = tf.placeholder(dtype=tf.float32, shape=[None,time_step, INPUT_NODE])
-        y = tf.placeholder(dtype=tf.float32, shape=[None, time_step, fc_inference.n_target])
-
-        reshape_x = tf.reshape(x,[-1, INPUT_NODE])
-        
-        global GLOBAL_COUNT
-
-        if GLOBAL_COUNT == 0:
-            y_ = fc_inference.chg_inference(reshape_x, None, None, False)
-        else:
-            y_ = fc_inference.chg_inference(reshape_x,None,None,True)
-
-        GLOBAL_COUNT += 1
-        
-        cross_entroy_mean = tf.reduce_mean(tf.square(tf.reshape(y_,[-1]) - tf.reshape(y, [-1])))
-
-        test_x, test_y = data_sets.test_batch()
-
-        saver = tf.train.Saver(tf.global_variables())
-
-        with tf.Session() as sess:
-            tf.global_variables_initializer().run()
-            model_file = tf.train.latest_checkpoint('/kywk/strategy/model/close_price_4/model/')
-            saver.restore(sess, model_file)
-            mse_final, out = sess.run([cross_entroy_mean, y_],
-                                  feed_dict={x: test_x[0:1],
-                                             y: test_y[0:1]
-                                             }
-                                  )
-            return mse_final
-
-
 
     def init_model(self, time_step,  model_file):
         self.__x = tf.placeholder(dtype=tf.float32, shape=[None,time_step, INPUT_NODE])
@@ -70,6 +37,15 @@ class Prediciton(object):
     def prediction_price(self, data_set_x,time_step):        
         out = self.__sess.run([self.__y_], feed_dict={self.__x:data_set_x[0:1]})
         return out
+
+    def prediction(self, data_sets):
+        while data_sets.is_range():
+            data_set = data_sets.batch()
+            batch_index, test_x, test_y = data_set.test_batch()
+            for step in range(len(batch_index) - 1):
+                out = self.__sess.run([self.__y_],feed_dict={self.__x:test_x[batch_index[step]:batch_index[step+1]]})
+                print out
+    
 
 
     def new_signal(self, data_sets):
@@ -179,8 +155,17 @@ def test_three():
         j -= 1
     # print input_data
 
+def test_four():
+    model_file = './../test/model/'
+    pred = Prediciton()
+    pred.init_model(55, model_file)
+    data_sets = DataSets()
+    data_sets.gf_etf('./data/ag/ag2017/dev/')
+    pred.prediction(data_sets)
+
+
 def main(argv=None):
-    test_three()
+    test_four()
 
 
 if __name__ == '__main__':
